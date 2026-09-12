@@ -1,28 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    // Ne bloque pas le build si ESLint trouve des erreurs
-    ignoreDuringBuilds: true,
-  },
-
-  // 🔁 Proxy / API vers le backend Nest (port 3000)
+  eslint: { ignoreDuringBuilds: true },
   async rewrites() {
-    return [
-      {
-        source: '/prospects/:path*',
-        destination: 'http://localhost:3000/prospects/:path*',
-      },
-      {
-        source: '/reporting/:path*',
-        destination: 'http://localhost:3000/reporting/:path*',
-      },
-      {
-        source: '/metrics/:path*',
-        destination: 'http://localhost:3000/metrics/:path*',
-      },
-      // Tu peux en ajouter d'autres ici si besoin :
-      // { source: '/appointments/:path*', destination: 'http://localhost:3000/appointments/:path*' },
-    ];
+    const backendUrl = (process.env.API_URL || 'http://localhost:3000').replace(/\/$/, '');
+    if (process.env.NODE_ENV === 'production' && !process.env.API_URL) {
+      throw new Error('API_URL is required in production');
+    }
+    return [{ source: '/api/:path*', destination: `${backendUrl}/:path*` }];
   },
 };
 
