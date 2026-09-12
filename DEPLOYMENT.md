@@ -7,7 +7,7 @@ Set these project variables in Vercel before building:
 | Variable | Production value |
 | --- | --- |
 | `NEXT_PUBLIC_API_URL` | `/api` |
-| `API_URL` | `https://capability-api-ibrahimabdou771-7900.vercel.app` |
+| `API_URL` | `https://capability-api.vercel.app` |
 | `TZ` | `Europe/Paris` |
 
 `/api/:path*` is proxied to the backend. Frontend routes such as `/prospects` stay in Next.js. Production builds refuse to proceed without `API_URL`. Preview environments should point to a backend preview configured against a separate Neon branch.
@@ -29,4 +29,4 @@ Next.js was patched within the 15.5 series and React within the 19.1 series. ESL
 4. Verify a real create/read/update action against Neon using explicitly marked test data.
 5. Download a PDF and inspect the runtime logs for errors.
 
-The frontend is prepared but has not yet been deployed. Vercel workspace access must be restored to provision environment variables and complete live acceptance checks.
+Production deployed on 12 September 2026 at https://capability-frontend-eosin.vercel.app. Authentication succeeds through the same-origin API proxy as ibrahimabdou771@gmail.com. The API's primary production domain must be used: secondary generated domains can require Vercel authentication even when the primary domain is public. Neon has been initialized and the administrator created; no credentials are committed.
