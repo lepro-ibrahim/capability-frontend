@@ -78,7 +78,7 @@ export default function AnalyticsMetricCard({
       {!loading && card.type === "LINE" ? (
         result.series?.length ? (
           <div className="analytics-chart" aria-label={`Courbe ${card.title}`}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 320, height: 230 }}>
               <LineChart data={result.series} margin={{ top: 12, right: 8, left: -24, bottom: 0 }}>
                 <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5)} tick={{ fill: "#718096", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#718096", fontSize: 10 }} axisLine={false} tickLine={false} />
