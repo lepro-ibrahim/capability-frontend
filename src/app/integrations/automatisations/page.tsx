@@ -383,7 +383,7 @@ export default function AutomatisationsPage() {
         </div>
       )}
 
-      <style jsx global>{`
+      <style>{`
         .menu-item { display:block; width:100%; text-align:left; font-size:12px; padding:8px 10px; border-radius:8px; }
         .menu-item:hover { background: rgba(255,255,255,0.08); }
       `}</style>
