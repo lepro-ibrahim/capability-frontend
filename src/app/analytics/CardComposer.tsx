@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import SourcesFilter from "@/components/SourcesFilter";
 import type {
+  AnalyticsCard,
   AnalyticsCardType,
   AnalyticsComparison,
   AnalyticsValueFormat,
@@ -15,14 +17,18 @@ const VISUAL_LABELS: Record<AnalyticsCardType, { label: string; description: str
   FUNNEL: { label: "Funnel", description: "Les pertes entre les étapes", icon: "▽" },
 };
 
+const SOURCE_FILTER_UNSUPPORTED = new Set<MetricDefinition["key"]>(["AD_SPEND", "CASH_IN", "ROAS"]);
+
 export default function CardComposer({
   open,
+  card,
   catalog,
   nextOrder,
   onClose,
   onSave,
 }: {
   open: boolean;
+  card?: AnalyticsCard | null;
   catalog: MetricDefinition[];
   nextOrder: number;
   onClose: () => void;
@@ -32,18 +38,44 @@ export default function CardComposer({
   const definition = useMemo(() => catalog.find((item) => item.key === metricKey) ?? catalog[0], [catalog, metricKey]);
   const [type, setType] = useState<AnalyticsCardType>("KPI");
   const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
   const [comparison, setComparison] = useState<AnalyticsComparison>("PREVIOUS_PERIOD");
+  const [sources, setSources] = useState<string[]>([]);
+  const [excludeSources, setExcludeSources] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isEditing = Boolean(card);
+  const supportsSourceFilters = definition ? !SOURCE_FILTER_UNSUPPORTED.has(definition.key) : false;
 
   useEffect(() => {
-    if (!definition) return;
-    setType(definition.visualizations[0]);
-    setTitle(definition.label);
-    setComparison(definition.key === "PIPELINE_FUNNEL" ? "NONE" : "PREVIOUS_PERIOD");
-  }, [definition]);
+    if (!open) return;
+    const initialDefinition = catalog.find((item) => item.key === card?.metricKey) ?? catalog[0];
+    if (!initialDefinition) return;
+    setMetricKey(initialDefinition.key);
+    setType(card?.type ?? initialDefinition.visualizations[0]);
+    setTitle(card?.title ?? initialDefinition.label);
+    setSubtitle(card?.subtitle ?? initialDefinition.description);
+    setComparison(card?.comparison ?? (initialDefinition.key === "PIPELINE_FUNNEL" ? "NONE" : "PREVIOUS_PERIOD"));
+    setSources(card?.filters?.sources ?? []);
+    setExcludeSources(card?.filters?.excludeSources ?? []);
+    setError(null);
+  }, [card, catalog, open]);
 
   if (!open) return null;
+
+  function selectMetric(nextKey: MetricDefinition["key"]) {
+    const nextDefinition = catalog.find((item) => item.key === nextKey);
+    if (!nextDefinition) return;
+    setMetricKey(nextDefinition.key);
+    setType(nextDefinition.visualizations[0]);
+    setTitle(nextDefinition.label);
+    setSubtitle(nextDefinition.description);
+    setComparison(nextDefinition.key === "PIPELINE_FUNNEL" ? "NONE" : "PREVIOUS_PERIOD");
+    if (SOURCE_FILTER_UNSUPPORTED.has(nextDefinition.key)) {
+      setSources([]);
+      setExcludeSources([]);
+    }
+  }
 
   async function submit() {
     if (!definition || !title.trim()) return;
@@ -51,15 +83,27 @@ export default function CardComposer({
     setError(null);
     try {
       const width = type === "KPI" ? 3 : 6;
+      const layout = card
+        ? {
+            ...card.layout,
+            w: type === "KPI" ? card.layout.w : Math.max(6, card.layout.w),
+            h: type === "KPI" ? 2 : Math.max(4, card.layout.h),
+          }
+        : { x: 0, y: 0, w: width, h: type === "KPI" ? 2 : 4 };
       await onSave({
         title: title.trim(),
-        subtitle: definition.description,
+        subtitle: subtitle.trim() || undefined,
         type,
         metricKey: definition.key,
         valueFormat: definition.format as AnalyticsValueFormat,
         comparison,
-        layout: { x: 0, y: 0, w: width, h: type === "KPI" ? 2 : 4 },
-        sortOrder: nextOrder,
+        filters: {
+          ...card?.filters,
+          sources: supportsSourceFilters ? sources : [],
+          excludeSources: supportsSourceFilters ? excludeSources : [],
+        },
+        layout,
+        sortOrder: card?.sortOrder ?? nextOrder,
       });
       onClose();
     } catch {
@@ -75,9 +119,9 @@ export default function CardComposer({
       <section className="analytics-composer">
         <header>
           <div>
-            <span className="analytics-step">Nouvelle carte</span>
-            <h2 id="card-composer-title">Quel signal voulez-vous suivre ?</h2>
-            <p>Choisissez une donnée, son apparence et son niveau de comparaison.</p>
+            <span className="analytics-step">{isEditing ? "Modifier la carte" : "Nouvelle carte"}</span>
+            <h2 id="card-composer-title">{isEditing ? "Ajustez ce que cette carte mesure." : "Quel signal voulez-vous suivre ?"}</h2>
+            <p>Métrique, apparence, comparaison et sources restent modifiables à tout moment.</p>
           </div>
           <button type="button" className="analytics-icon-button" onClick={onClose} aria-label="Fermer">×</button>
         </header>
@@ -85,7 +129,7 @@ export default function CardComposer({
         <div className="analytics-composer__body">
           <label className="analytics-field">
             <span>Métrique</span>
-            <select value={metricKey} onChange={(event) => setMetricKey(event.target.value as MetricDefinition["key"])}>
+            <select value={metricKey ?? ""} onChange={(event) => selectMetric(event.target.value as MetricDefinition["key"])}>
               {catalog.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
             </select>
             <small>{definition?.description}</small>
@@ -110,12 +154,34 @@ export default function CardComposer({
             <input value={title} maxLength={90} onChange={(event) => setTitle(event.target.value)} placeholder="Ex. Ventes du mois" />
           </label>
 
+          <label className="analytics-field">
+            <span>Description</span>
+            <input value={subtitle} maxLength={180} onChange={(event) => setSubtitle(event.target.value)} placeholder="Expliquez rapidement ce que la carte mesure" />
+          </label>
+
           {type !== "FUNNEL" ? (
             <label className="analytics-field analytics-field--inline">
               <span>Comparer à la période précédente</span>
               <input type="checkbox" checked={comparison === "PREVIOUS_PERIOD"} onChange={(event) => setComparison(event.target.checked ? "PREVIOUS_PERIOD" : "NONE")} />
             </label>
           ) : null}
+
+          <fieldset className="analytics-fieldset analytics-card-filters">
+            <legend>Filtres propres à cette carte</legend>
+            {supportsSourceFilters ? (
+              <>
+                <p>Ils affinent les filtres globaux du tableau sans modifier les autres cartes.</p>
+                <SourcesFilter
+                  sources={sources}
+                  excludeSources={excludeSources}
+                  onSourcesChange={setSources}
+                  onExcludeSourcesChange={setExcludeSources}
+                />
+              </>
+            ) : (
+              <p>Cette métrique financière n’est pas encore attribuable par source.</p>
+            )}
+          </fieldset>
 
           <div className="analytics-preview-card">
             <span>Aperçu</span>
@@ -126,7 +192,7 @@ export default function CardComposer({
 
         <footer>
           <button type="button" className="analytics-button analytics-button--ghost" onClick={onClose}>Annuler</button>
-          <button type="button" className="analytics-button analytics-button--primary" disabled={saving || !title.trim()} onClick={submit}>{saving ? "Enregistrement…" : "Ajouter la carte"}</button>
+          <button type="button" className="analytics-button analytics-button--primary" disabled={saving || !title.trim()} onClick={submit}>{saving ? "Enregistrement…" : isEditing ? "Enregistrer les modifications" : "Ajouter la carte"}</button>
         </footer>
       </section>
     </div>
