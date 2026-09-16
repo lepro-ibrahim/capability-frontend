@@ -4,7 +4,6 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import GlobalFiltersProvider from "@/components/GlobalFiltersProvider";
-import GlobalSourcesFilterProvider from "@/components/GlobalSourcesFilterProvider";
 /**
  * Règle simple :
  * - Sidebar MASQUÉE sur /login uniquement
@@ -16,13 +15,11 @@ export default function ClientFrame({ children }: { children: React.ReactNode })
   const isLogin = pathname === "/login"; // ajuste si tu as d’autres routes d’auth
 
   return (
-    <GlobalSourcesFilterProvider>
-      <GlobalFiltersProvider>
-        {!isLogin && <Sidebar />}
-        <div className={isLogin ? "min-h-screen" : "min-h-screen sm:ml-64"}>
-          {children}
-        </div>
-      </GlobalFiltersProvider>
-    </GlobalSourcesFilterProvider>
+    <GlobalFiltersProvider>
+      {!isLogin && <Sidebar />}
+      <div className={isLogin ? "min-h-screen" : "min-h-screen sm:ml-64"}>
+        {children}
+      </div>
+    </GlobalFiltersProvider>
   );
 }
