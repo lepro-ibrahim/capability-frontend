@@ -425,9 +425,9 @@ a { color: inherit; text-decoration: none; }
 .analytics-dashboard-tabs .analytics-dashboard-tabs__add { width: 34px; padding-inline: 0; border-style: dashed; border-color: var(--analytics-line); font-size: 18px; }
 .analytics-workspace-bar__meta { display: flex; align-items: center; gap: 15px; flex: 0 0 auto; color: var(--analytics-muted); font-size: 11px; }
 .analytics-workspace-bar__meta button { color: var(--analytics-violet); }
-.analytics-filter-strip { max-width: 1480px; margin: 0 auto 20px; border: 1px solid var(--analytics-line); border-top: 0; border-radius: 0 0 16px 16px; background: color-mix(in srgb, var(--analytics-panel) 78%, transparent); }
-.analytics-filter-strip > .card { border: 0; border-radius: 0 0 16px 16px; box-shadow: none; background: transparent; }
-.analytics-sources-popover { position: absolute; z-index: 15; right: 10px; top: calc(100% + 8px); width: min(360px, calc(100vw - 40px)); padding: 15px; border: 1px solid var(--analytics-line); border-radius: 14px; background: var(--analytics-panel-strong); box-shadow: 0 22px 70px rgba(0, 0, 0, .4); }
+.analytics-filter-strip { z-index: 30; max-width: 1480px; margin: 0 auto 20px; overflow: visible; border: 1px solid var(--analytics-line); border-top: 0; border-radius: 0 0 16px 16px; background: color-mix(in srgb, var(--analytics-panel) 78%, transparent); }
+.analytics-filter-strip > .card { overflow: visible; border: 0; border-radius: 0 0 16px 16px; box-shadow: none; background: transparent; }
+.analytics-sources-popover { position: absolute; z-index: 1; right: 10px; top: calc(100% + 8px); width: min(360px, calc(100vw - 40px)); padding: 15px; border: 1px solid var(--analytics-line); border-radius: 14px; background: var(--analytics-panel-strong); box-shadow: 0 22px 70px rgba(0, 0, 0, .4); }
 .analytics-canvas { max-width: 1480px; min-height: 300px; margin: 0 auto; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: dense; gap: 14px; }
 .analytics-canvas.is-editing { padding: 14px; border: 1px dashed rgba(124, 131, 255, .25); border-radius: 18px; background-image: linear-gradient(rgba(124, 131, 255, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 131, 255, .035) 1px, transparent 1px); background-size: calc(100% / 12) 48px; }
 .analytics-canvas__item { position: relative; min-width: 0; }
