@@ -30,6 +30,7 @@ export default function AnalyticsMetricCard({
   card,
   result,
   editing,
+  onEdit,
   onResize,
   onDuplicate,
   onDelete,
@@ -37,12 +38,16 @@ export default function AnalyticsMetricCard({
   card: AnalyticsCard;
   result?: MetricResult;
   editing: boolean;
+  onEdit: () => void;
   onResize: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const loading = !result;
   const deltaPositive = (result?.delta ?? 0) >= 0;
+  const filterCount =
+    (card.filters?.sources?.length ?? 0) +
+    (card.filters?.excludeSources?.length ?? 0);
 
   return (
     <article className="analytics-card group" aria-busy={loading}>
@@ -51,9 +56,15 @@ export default function AnalyticsMetricCard({
           <p className="analytics-card__eyebrow">{card.type === "KPI" ? "Indicateur" : card.type === "LINE" ? "Évolution" : "Conversion"}</p>
           <h3>{card.title}</h3>
           {card.subtitle ? <p className="analytics-card__subtitle">{card.subtitle}</p> : null}
+          {filterCount > 0 ? (
+            <span className="analytics-card__filter-badge">
+              {filterCount} filtre{filterCount > 1 ? "s" : ""} propre{filterCount > 1 ? "s" : ""}
+            </span>
+          ) : null}
         </div>
         {editing ? (
           <div className="analytics-card__actions">
+            <button type="button" onClick={onEdit} title="Modifier la carte" aria-label={`Modifier ${card.title}`}>✎</button>
             <button type="button" onClick={onResize} title="Changer la largeur">↔</button>
             <button type="button" onClick={onDuplicate} title="Dupliquer">⧉</button>
             <button type="button" onClick={onDelete} title="Supprimer">×</button>
