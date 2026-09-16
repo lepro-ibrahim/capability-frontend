@@ -17,7 +17,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
       - name: Enable corepack
         run: corepack enable
@@ -33,6 +32,7 @@ jobs:
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          API_URL: https://capability-api.vercel.app
         run: pnpm build
 
       # Si lint casse à cause de dette existante, laisse commenté au début.

@@ -14,42 +14,57 @@ type Me = { id: string; email: string; role: Role; firstName?: string | null };
 function IconDashboard() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/>
+      <path
+        fill="currentColor"
+        d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"
+      />
     </svg>
   );
 }
 function IconProspects() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m-7 9a7 7 0 0 1 14 0z"/>
+      <path
+        fill="currentColor"
+        d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m-7 9a7 7 0 0 1 14 0z"
+      />
     </svg>
   );
 }
 function IconAnalytics() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M4 19h16v2H2V3h2zm3-3H5v-5h2zm4 0H9V6h2zm4 0h-2V9h2zm4 0h-2V4h2z"/>
+      <path
+        fill="currentColor"
+        d="M4 19h16v2H2V3h2zm3-3H5v-5h2zm4 0H9V6h2zm4 0h-2V9h2zm4 0h-2V4h2z"
+      />
     </svg>
   );
 }
 function IconBudget() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M3 6h18v12H3zM6 9h3v6H6zM11 9h7v2h-7zM11 13h7v2h-7z"/>
+      <path
+        fill="currentColor"
+        d="M3 6h18v12H3zM6 9h3v6H6zM11 9h7v2h-7zM11 13h7v2h-7z"
+      />
     </svg>
   );
 }
 function IconZap() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M13 2L3 14h7l-1 8l11-14h-7z"/>
+      <path fill="currentColor" d="M13 2L3 14h7l-1 8l11-14h-7z" />
     </svg>
   );
 }
 function IconUsers() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
-      <path fill="currentColor" d="M16 13a4 4 0 1 0-4-4a4 4 0 0 0 4 4m-8 0a4 4 0 1 0-4-4a4 4 0 0 0 4 4m0 2c-3.31 0-6 2.69-6 6h4a6 6 0 0 1 6-6zm8 0c-1.5 0-2.87.56-3.9 1.48A7.96 7.96 0 0 1 18 23h4c0-3.31-2.69-6-6-6"/>
+      <path
+        fill="currentColor"
+        d="M16 13a4 4 0 1 0-4-4a4 4 0 0 0 4 4m-8 0a4 4 0 1 0-4-4a4 4 0 0 0 4 4m0 2c-3.31 0-6 2.69-6 6h4a6 6 0 0 1 6-6zm8 0c-1.5 0-2.87.56-3.9 1.48A7.96 7.96 0 0 1 18 23h4c0-3.31-2.69-6-6-6"
+      />
     </svg>
   );
 }
@@ -62,7 +77,9 @@ function RolePill({ role }: { role?: Role }) {
     SETTER: "bg-sky-400/15 border-sky-400/30 text-sky-200",
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full border text-[10px] tracking-wide uppercase ${map[role]}`}>
+    <span
+      className={`px-2 py-0.5 rounded-full border text-[10px] tracking-wide uppercase ${map[role]}`}
+    >
       {role}
     </span>
   );
@@ -74,31 +91,47 @@ export default function Sidebar() {
   const searchParams = useSearchParams();
   const safeSearchParams = useMemo(
     () => searchParams ?? new URLSearchParams(),
-    [searchParams]
+    [searchParams],
   );
   const safePathname = pathname ?? "/";
   const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api.get("/auth/me")
-      .then((r) => { if (!cancelled) setMe(r.data as Me); })
-      .catch(() => { if (!cancelled) setMe(null); });
-    return () => { cancelled = true; };
+    api
+      .get("/auth/me")
+      .then((r) => {
+        if (!cancelled) setMe(r.data as Me);
+      })
+      .catch(() => {
+        if (!cancelled) setMe(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const NAV = useMemo(() => {
     const role = me?.role as Role | undefined;
-type NavItem = { label: string; href: string; icon: React.ReactNode };
-const items: NavItem[] = [
+    type NavItem = { label: string; href: string; icon: React.ReactNode };
+    const items: NavItem[] = [
       { label: "Prospects", href: "/prospects", icon: <IconProspects /> },
+      { label: "Automatisations", href: "/automations", icon: <IconZap /> },
     ];
     if (role === "ADMIN") {
-      items.unshift({ label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> });
+      items.unshift({
+        label: "Dashboard",
+        href: "/dashboard",
+        icon: <IconDashboard />,
+      });
       items.push(
         { label: "Mes tableaux", href: "/analytics", icon: <IconAnalytics /> },
         { label: "Budgets", href: "/budgets", icon: <IconBudget /> },
-        { label: "Webhooks (GHL)", href: "/integrations/automatisations", icon: <IconZap /> },
+        {
+          label: "Webhooks (GHL)",
+          href: "/integrations/automatisations",
+          icon: <IconZap />,
+        },
         { label: "Utilisateurs", href: "/users", icon: <IconUsers /> },
       );
       return items;
@@ -119,12 +152,11 @@ const items: NavItem[] = [
       }
       return safePathname === "/dashboard" && !safeSearchParams.get("view");
     }
-    return (
-      safePathname === hrefPath || safePathname.startsWith(hrefPath + "/")
-    );
+    return safePathname === hrefPath || safePathname.startsWith(hrefPath + "/");
   };
 
-  const who = me?.firstName?.trim() || (me?.email ? me.email.split("@")[0] : "—");
+  const who =
+    me?.firstName?.trim() || (me?.email ? me.email.split("@")[0] : "—");
 
   return (
     // FIXED, full height, collée à gauche (comme GHL)
@@ -140,7 +172,9 @@ const items: NavItem[] = [
             <IconDashboard />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm tracking-widest text-white/60 uppercase">Capability</div>
+            <div className="truncate text-sm tracking-widest text-white/60 uppercase">
+              Capability
+            </div>
             <div className="flex items-center gap-2">
               <div className="truncate font-semibold">Capability Dashboard</div>
             </div>
@@ -152,7 +186,9 @@ const items: NavItem[] = [
             <span className="text-white/80 truncate">{who}</span>
             <RolePill role={me?.role} />
           </div>
-          <div className="text-[11px] text-white/50 truncate">{me?.email || " "}</div>
+          <div className="text-[11px] text-white/50 truncate">
+            {me?.email || " "}
+          </div>
         </div>
       </div>
 
@@ -169,19 +205,24 @@ const items: NavItem[] = [
                     prefetch={false}
                     aria-current={active ? "page" : undefined}
                     className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition
-                      ${active
-                        ? "bg-white/12 border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                        : "hover:bg-white/8 border border-transparent"
+                      ${
+                        active
+                          ? "bg-white/12 border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                          : "hover:bg-white/8 border border-transparent"
                       }`}
                     title={it.label}
                   >
-                    <span className={`grid h-8 w-8 place-items-center rounded-lg border 
-                      ${active ? "bg-white/10 border-white/20" : "bg-white/5 border-white/10 group-hover:bg-white/8"}`}>
+                    <span
+                      className={`grid h-8 w-8 place-items-center rounded-lg border 
+                      ${active ? "bg-white/10 border-white/20" : "bg-white/5 border-white/10 group-hover:bg-white/8"}`}
+                    >
                       <span className="opacity-90">{it.icon}</span>
                     </span>
                     <span className="truncate">{it.label}</span>
-                    <span className={`ml-auto h-5 w-1 rounded-full transition 
-                      ${active ? "bg-indigo-400/80" : "bg-transparent group-hover:bg-white/20"}`} />
+                    <span
+                      className={`ml-auto h-5 w-1 rounded-full transition 
+                      ${active ? "bg-indigo-400/80" : "bg-transparent group-hover:bg-white/20"}`}
+                    />
                   </Link>
                 </li>
               );
@@ -197,7 +238,10 @@ const items: NavItem[] = [
           </div>
 
           <button
-            onClick={() => { clearAccessToken(); router.replace("/login"); }}
+            onClick={() => {
+              clearAccessToken();
+              router.replace("/login");
+            }}
             className="mt-3 w-full rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/[0.15] transition"
             title="Se déconnecter"
           >
@@ -211,5 +255,4 @@ const items: NavItem[] = [
       </div>
     </aside>
   );
-  
 }
