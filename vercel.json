@@ -3,5 +3,9 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
-  "regions": ["cle1"]
+  "regions": ["cle1"],
+  "env": {
+    "API_URL": "https://capability-api.vercel.app",
+    "NEXT_PUBLIC_API_URL": "/api"
+  }
 }
