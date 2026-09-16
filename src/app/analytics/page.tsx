@@ -32,6 +32,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<AnalyticsCard | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [newDashboardOpen, setNewDashboardOpen] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState("");
@@ -72,7 +73,12 @@ export default function AnalyticsPage() {
       setQuery(await analyticsApi.query({
         from: isoDate(range.from),
         to: isoDate(range.to),
-        cards: activeDashboard.cards.map((card) => ({ id: card.id, metricKey: card.metricKey, comparison: card.comparison })),
+        cards: activeDashboard.cards.map((card) => ({
+          id: card.id,
+          metricKey: card.metricKey,
+          comparison: card.comparison,
+          filters: card.filters ?? undefined,
+        })),
         filters: { sources, excludeSources },
       }));
     } catch {
@@ -106,8 +112,32 @@ export default function AnalyticsPage() {
     await createCard({
       title: `${card.title} — copie`, subtitle: card.subtitle, type: card.type, metricKey: card.metricKey,
       valueFormat: card.valueFormat, comparison: card.comparison,
+      filters: card.filters ? { ...card.filters } : undefined,
       layout: { ...card.layout, x: 0, y: card.layout.y + 1 }, sortOrder: cards.length,
     });
+  }
+
+  async function saveComposedCard(input: CreateCardInput) {
+    if (editingCard) {
+      replaceCard(await analyticsApi.updateCard(editingCard.id, input));
+      return;
+    }
+    await createCard(input);
+  }
+
+  function openNewCardComposer() {
+    setEditingCard(null);
+    setComposerOpen(true);
+  }
+
+  function openCardEditor(card: AnalyticsCard) {
+    setEditingCard(card);
+    setComposerOpen(true);
+  }
+
+  function closeCardComposer() {
+    setComposerOpen(false);
+    setEditingCard(null);
   }
 
   async function deleteCard(card: AnalyticsCard) {
@@ -179,7 +209,7 @@ export default function AnalyticsPage() {
           <div className="analytics-hero__actions">
             <button className="analytics-button analytics-button--ghost" type="button" onClick={() => setFiltersOpen((value) => !value)}>Filtres {sources.length || excludeSources.length ? `(${sources.length + excludeSources.length})` : ""}</button>
             <button className={`analytics-button ${editing ? "analytics-button--live" : "analytics-button--ghost"}`} type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Terminer" : "Organiser"}</button>
-            <button className="analytics-button analytics-button--primary" type="button" onClick={() => setComposerOpen(true)} disabled={!activeDashboard}>+ Ajouter une carte</button>
+            <button className="analytics-button analytics-button--primary" type="button" onClick={openNewCardComposer} disabled={!activeDashboard}>+ Ajouter une carte</button>
           </div>
         </header>
 
@@ -211,7 +241,7 @@ export default function AnalyticsPage() {
           <section className="analytics-empty">
             <span>✦</span><h2>Ce tableau attend son premier signal.</h2>
             <p>Ajoutez une carte pour suivre un objectif, une tendance ou votre funnel commercial.</p>
-            <button className="analytics-button analytics-button--primary" type="button" onClick={() => setComposerOpen(true)}>Créer la première carte</button>
+            <button className="analytics-button analytics-button--primary" type="button" onClick={openNewCardComposer}>Créer la première carte</button>
           </section>
         ) : null}
 
@@ -231,6 +261,7 @@ export default function AnalyticsPage() {
                 card={card}
                 result={query?.results[card.id]}
                 editing={editing}
+                onEdit={() => openCardEditor(card)}
                 onResize={() => void resizeCard(card)}
                 onDuplicate={() => void duplicateCard(card)}
                 onDelete={() => void deleteCard(card)}
@@ -240,7 +271,14 @@ export default function AnalyticsPage() {
           ))}
         </section>
 
-        <CardComposer open={composerOpen} catalog={catalog} nextOrder={cards.length} onClose={() => setComposerOpen(false)} onSave={createCard} />
+        <CardComposer
+          open={composerOpen}
+          card={editingCard}
+          catalog={catalog}
+          nextOrder={cards.length}
+          onClose={closeCardComposer}
+          onSave={saveComposedCard}
+        />
 
         {newDashboardOpen ? (
           <div className="analytics-modal" role="dialog" aria-modal="true" aria-labelledby="new-dashboard-title">
