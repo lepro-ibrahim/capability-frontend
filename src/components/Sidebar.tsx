@@ -25,6 +25,13 @@ function IconProspects() {
     </svg>
   );
 }
+function IconAnalytics() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 19h16v2H2V3h2zm3-3H5v-5h2zm4 0H9V6h2zm4 0h-2V9h2zm4 0h-2V4h2z"/>
+    </svg>
+  );
+}
 function IconBudget() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24">
@@ -89,6 +96,7 @@ const items: NavItem[] = [
     if (role === "ADMIN") {
       items.unshift({ label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> });
       items.push(
+        { label: "Mes tableaux", href: "/analytics", icon: <IconAnalytics /> },
         { label: "Budgets", href: "/budgets", icon: <IconBudget /> },
         { label: "Webhooks (GHL)", href: "/integrations/automatisations", icon: <IconZap /> },
         { label: "Utilisateurs", href: "/users", icon: <IconUsers /> },
