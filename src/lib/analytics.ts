@@ -13,6 +13,14 @@ export type AnalyticsMetricKey =
 
 export type CardLayout = { x: number; y: number; w: number; h: number };
 
+export type AnalyticsCardFilters = {
+  sources?: string[];
+  excludeSources?: string[];
+  setterIds?: string[];
+  closerIds?: string[];
+  tags?: string[];
+};
+
 export type AnalyticsCard = {
   id: string;
   dashboardId: string;
@@ -22,6 +30,7 @@ export type AnalyticsCard = {
   metricKey: AnalyticsMetricKey;
   valueFormat: AnalyticsValueFormat;
   comparison: AnalyticsComparison;
+  filters?: AnalyticsCardFilters | null;
   layout: CardLayout;
   sortOrder: number;
 };
@@ -76,7 +85,12 @@ export const analyticsApi = {
   query: (input: {
     from: string;
     to: string;
-    cards: Array<{ id: string; metricKey: AnalyticsMetricKey; comparison: AnalyticsComparison }>;
+    cards: Array<{
+      id: string;
+      metricKey: AnalyticsMetricKey;
+      comparison: AnalyticsComparison;
+      filters?: AnalyticsCardFilters;
+    }>;
     filters?: { sources?: string[]; excludeSources?: string[] };
   }) => api.post<AnalyticsQueryResponse>("/analytics/query", input).then((response) => response.data),
 };
