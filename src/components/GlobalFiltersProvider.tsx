@@ -10,7 +10,10 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { serializeCsv } from "@/lib/globalSourcesFilters";
+import {
+  serializeCsv,
+  setGlobalSourcesFilters,
+} from "@/lib/globalSourcesFilters";
 
 export type GlobalFiltersContextValue = {
   sources: string[];
@@ -70,6 +73,10 @@ export default function GlobalFiltersProvider({
     () => serializeCsv(excludeSources),
     [excludeSources]
   );
+
+  useEffect(() => {
+    setGlobalSourcesFilters({ sourcesCsv, sourcesExcludeCsv });
+  }, [sourcesCsv, sourcesExcludeCsv]);
 
   useEffect(() => {
     const nextSources = parseCsv(safeSearchParams.get("sourcesCsv"));
