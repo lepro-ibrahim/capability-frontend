@@ -79,6 +79,22 @@ function IconCloser() {
   );
 }
 
+function IconCalendar() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3zm13 8H4v10h16zM4 8h16V6h-3v1h-2V6H9v1H7V6H4z" />
+    </svg>
+  );
+}
+
+function IconConnections() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M8.6 13.6l-1.4-1.4l4.6-4.6a4 4 0 1 1 5.7 5.7l-2.1 2.1l-1.4-1.4l2.1-2.1a2 2 0 1 0-2.8-2.8zm6.8-3.2l1.4 1.4l-4.6 4.6a4 4 0 0 1-5.7-5.7l2.1-2.1L10 10l-2.1 2.1a2 2 0 1 0 2.8 2.8z" />
+    </svg>
+  );
+}
+
 function RolePill({ role }: { role?: Role }) {
   if (!role) return null;
   const map: Record<Role, string> = {
@@ -126,10 +142,12 @@ export default function Sidebar() {
     type NavItem = { label: string; href: string; icon: React.ReactNode };
     const items: NavItem[] = [
       { label: "Prospects", href: "/prospects", icon: <IconProspects /> },
+      { label: "Calendrier", href: "/calendar", icon: <IconCalendar /> },
       { label: "Automatisations", href: "/automations", icon: <IconZap /> },
+      { label: "Intégrations", href: "/integrations", icon: <IconConnections /> },
     ];
     if (role === "ADMIN" || role === "CLOSER") {
-      items.splice(1, 0, {
+      items.splice(2, 0, {
         label: "Espace closer",
         href: "/closers",
         icon: <IconCloser />,
@@ -169,6 +187,7 @@ export default function Sidebar() {
       }
       return safePathname === "/dashboard" && !safeSearchParams.get("view");
     }
+    if (hrefPath === "/integrations") return safePathname === hrefPath;
     return safePathname === hrefPath || safePathname.startsWith(hrefPath + "/");
   };
 
