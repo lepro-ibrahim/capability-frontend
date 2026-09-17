@@ -12,12 +12,14 @@ import GlobalFiltersProvider from "@/components/GlobalFiltersProvider";
  */
 export default function ClientFrame({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/login"; // ajuste si tu as d’autres routes d’auth
+  const isLogin = pathname === "/login";
+  const isPublicBooking = pathname?.startsWith("/book/") ?? false;
+  const isPublicPage = isLogin || isPublicBooking;
 
   return (
     <GlobalFiltersProvider>
-      {!isLogin && <Sidebar />}
-      <div className={isLogin ? "min-h-screen" : "min-h-screen sm:ml-64"}>
+      {!isPublicPage && <Sidebar />}
+      <div className={isPublicPage ? "min-h-screen" : "min-h-screen sm:ml-64"}>
         {children}
       </div>
     </GlobalFiltersProvider>
