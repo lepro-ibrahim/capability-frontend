@@ -4,6 +4,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import GlobalFiltersProvider from "@/components/GlobalFiltersProvider";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 /**
  * Règle simple :
  * - Sidebar MASQUÉE sur /login uniquement
@@ -20,6 +21,7 @@ export default function ClientFrame({ children }: { children: React.ReactNode })
     <GlobalFiltersProvider>
       {!isPublicPage && <Sidebar />}
       <div className={isPublicPage ? "min-h-screen" : "min-h-screen sm:ml-64"}>
+        {!isPublicPage && <ImpersonationBanner />}
         {children}
       </div>
     </GlobalFiltersProvider>

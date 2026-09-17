@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import api from "@/lib/api";
+import { setAccessToken } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 type Role = "ADMIN" | "SETTER" | "CLOSER";
 type UserRow = {
@@ -14,6 +16,12 @@ type PageRes = { items: UserRow[]; total: number; page: number; pageSize: number
 
 const roleLabel: Record<Role, string> = { ADMIN: "Admin", SETTER: "Setter", CLOSER: "Closer" };
 const fmtDate = (iso: string) => new Date(iso).toLocaleString("fr-FR");
+const apiErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message || fallback;
+  }
+  return fallback;
+};
 const toCSV = (rows: UserRow[]) => {
   const header = "Prénom,Nom,Email,Rôle,Actif,Créé le,Dernière maj";
   const lines = rows.map(r =>
@@ -39,6 +47,7 @@ export default function UsersAdminPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   const [fFirst, setFFirst] = useState("");
   const [fLast, setFLast] = useState("");
@@ -49,7 +58,7 @@ export default function UsersAdminPage() {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true); setErr(null);
     try {
       const res = await api.get<PageRes>("/admin/users", {
@@ -62,13 +71,15 @@ export default function UsersAdminPage() {
       });
       setRows(res.data.items || []);
       setTotal(res.data.total || 0);
-    } catch (e: any) {
-      setErr(e?.response?.data?.message || "Erreur de chargement");
+    } catch (error: unknown) {
+      setErr(apiErrorMessage(error, "Erreur de chargement"));
     } finally {
       setLoading(false);
     }
-  }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, role, active, page, pageSize]);
+  }, [active, page, pageSize, q, role]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   function openCreate() {
     setFFirst(""); setFLast(""); setFEmail(""); setFRole("SETTER"); setFActive(true); setFTemp("");
@@ -95,8 +106,8 @@ export default function UsersAdminPage() {
       setCreateOpen(false);
       setPage(1);
       await load();
-    } catch (e: any) {
-      setErr(e?.response?.data?.message || "Création impossible");
+    } catch (error: unknown) {
+      setErr(apiErrorMessage(error, "Création impossible"));
     }
   }
 
@@ -110,8 +121,8 @@ export default function UsersAdminPage() {
       });
       setEditOpen(false);
       await load();
-    } catch (e: any) {
-      setErr(e?.response?.data?.message || "Mise à jour impossible");
+    } catch (error: unknown) {
+      setErr(apiErrorMessage(error, "Mise à jour impossible"));
     }
   }
 
@@ -122,6 +133,21 @@ export default function UsersAdminPage() {
     const a = document.createElement("a");
     a.href = url; a.download = "utilisateurs.csv"; a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function startImpersonation(user: UserRow) {
+    setImpersonatingId(user.id);
+    setErr(null);
+    try {
+      const response = await api.post<{ access_token: string }>(
+        `/auth/impersonation/${user.id}/start`,
+      );
+      setAccessToken(response.data.access_token);
+      window.location.assign(user.role === "CLOSER" ? "/closers" : "/prospects");
+    } catch (error: unknown) {
+      setErr(apiErrorMessage(error, "Impossible d’ouvrir la vue de cet utilisateur."));
+      setImpersonatingId(null);
+    }
   }
 
   return (
@@ -135,7 +161,7 @@ export default function UsersAdminPage() {
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div>
                 <div className="text-xl font-semibold">Gestion des utilisateurs</div>
-                <div className="text-xs text-[--muted]">Créer, éditer, activer/désactiver, filtrer et exporter.</div>
+                <div className="text-xs text-[--muted]">Créer, éditer, activer/désactiver ou ouvrir la vue d’un membre.</div>
               </div>
               <div className="flex-1" />
               <div className="flex items-center gap-2">
@@ -153,13 +179,13 @@ export default function UsersAdminPage() {
               value={q}
               onChange={(e)=>{ setPage(1); setQ(e.target.value); }}
             />
-            <select className="input" value={role} onChange={(e)=>{ setPage(1); setRole(e.target.value as any); }}>
+            <select className="input" value={role} onChange={(e)=>{ setPage(1); setRole(e.target.value as "" | Role); }}>
               <option value="">Rôle : Tous</option>
               <option value="ADMIN">Admin</option>
               <option value="SETTER">Setter</option>
               <option value="CLOSER">Closer</option>
             </select>
-            <select className="input" value={active} onChange={(e)=>{ setPage(1); setActive(e.target.value as any); }}>
+            <select className="input" value={active} onChange={(e)=>{ setPage(1); setActive(e.target.value as "" | "true" | "false"); }}>
               <option value="">Statut : Tous</option>
               <option value="true">Actifs</option>
               <option value="false">Inactifs</option>
@@ -201,6 +227,16 @@ export default function UsersAdminPage() {
                     <td className="py-2 pr-2">{fmtDate(u.updatedAt)}</td>
                     <td className="py-2 pr-2">
                       <div className="flex justify-end gap-2">
+                        {u.role !== "ADMIN" && u.isActive && (
+                          <button
+                            className="btn btn-primary px-2 py-1"
+                            disabled={impersonatingId === u.id}
+                            onClick={() => startImpersonation(u)}
+                            title={`Consulter et modifier Capability comme ${u.firstName}`}
+                          >
+                            {impersonatingId === u.id ? "Ouverture…" : "Voir comme"}
+                          </button>
+                        )}
                         <button className="btn btn-ghost px-2 py-1" onClick={()=>openEdit(u)}>Éditer</button>
                         <button
                           className="btn btn-ghost px-2 py-1"
@@ -208,8 +244,8 @@ export default function UsersAdminPage() {
                             try {
                               await api.patch(`/admin/users/${u.id}`, { isActive: !u.isActive });
                               await load();
-                            } catch (e:any) {
-                              setErr(e?.response?.data?.message || "Action impossible");
+                            } catch (error: unknown) {
+                              setErr(apiErrorMessage(error, "Action impossible"));
                             }
                           }}
                         >
