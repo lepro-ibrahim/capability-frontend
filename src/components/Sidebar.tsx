@@ -68,6 +68,16 @@ function IconUsers() {
     </svg>
   );
 }
+function IconCloser() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M4 20V10h4v10zm6 0V4h4v16zm6 0v-7h4v7zM3 22h18v-2H3z"
+      />
+    </svg>
+  );
+}
 
 function RolePill({ role }: { role?: Role }) {
   if (!role) return null;
@@ -118,6 +128,13 @@ export default function Sidebar() {
       { label: "Prospects", href: "/prospects", icon: <IconProspects /> },
       { label: "Automatisations", href: "/automations", icon: <IconZap /> },
     ];
+    if (role === "ADMIN" || role === "CLOSER") {
+      items.splice(1, 0, {
+        label: "Espace closer",
+        href: "/closers",
+        icon: <IconCloser />,
+      });
+    }
     if (role === "ADMIN") {
       items.unshift({
         label: "Dashboard",
