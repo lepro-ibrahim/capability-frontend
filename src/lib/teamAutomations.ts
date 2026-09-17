@@ -58,6 +58,10 @@ export type TeamTask = {
   priority: TeamTaskPriority;
   dueAt?: string | null;
   createdAt: string;
+  metadata?: {
+    source?: string;
+    createdById?: string;
+  } | null;
   assignee: {
     id: string;
     firstName: string;
@@ -125,6 +129,15 @@ export type CreateTeamAutomationRuleInput = {
   actions: TeamAutomationAction[];
 };
 
+export type CreateManualTeamTaskInput = {
+  title: string;
+  description?: string;
+  assigneeId: string;
+  priority?: TeamTaskPriority;
+  dueAt?: string;
+  notificationMessage?: string;
+};
+
 export const teamAutomationsApi = {
   summary: () =>
     api
@@ -155,6 +168,10 @@ export const teamAutomationsApi = {
       .get<TeamTask[]>("/team-automations/tasks", {
         params: status ? { status } : undefined,
       })
+      .then((response) => response.data),
+  createTask: (input: CreateManualTeamTaskInput) =>
+    api
+      .post<TeamTask>("/team-automations/tasks", input)
       .then((response) => response.data),
   updateTask: (id: string, status: TeamTaskStatus) =>
     api

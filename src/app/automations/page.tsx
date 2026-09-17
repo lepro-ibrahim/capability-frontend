@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import {
   teamAutomationsApi,
   type CreateTeamAutomationRuleInput,
+  type CreateManualTeamTaskInput,
   type RecipientStrategy,
   type TeamAutomationCatalog,
   type TeamAutomationRule,
@@ -109,6 +110,7 @@ export default function AutomationsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [taskComposerOpen, setTaskComposerOpen] = useState(false);
 
   const isAdmin = me?.role === "ADMIN";
 
@@ -279,13 +281,22 @@ export default function AutomationsPage() {
                   Actualiser
                 </button>
                 {isAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => setComposerOpen(true)}
-                    className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold shadow-[0_10px_35px_rgba(99,102,241,.35)] transition hover:bg-indigo-400"
-                  >
-                    + Nouvelle règle
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setTaskComposerOpen(true)}
+                      className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_10px_35px_rgba(16,185,129,.25)] transition hover:bg-emerald-400"
+                    >
+                      + Assigner une tâche
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComposerOpen(true)}
+                      className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold shadow-[0_10px_35px_rgba(99,102,241,.35)] transition hover:bg-indigo-400"
+                    >
+                      + Nouvelle règle
+                    </button>
+                  </>
                 ) : null}
               </div>
             </header>
@@ -397,6 +408,21 @@ export default function AutomationsPage() {
             </section>
           </div>
         </div>
+
+        {isAdmin && catalog ? (
+          <ManualTaskComposer
+            open={taskComposerOpen}
+            catalog={catalog}
+            onClose={() => setTaskComposerOpen(false)}
+            onSave={async (input) => {
+              if (!me) return;
+              await teamAutomationsApi.createTask(input);
+              await refresh(me);
+              setActiveTab("tasks");
+              setTaskComposerOpen(false);
+            }}
+          />
+        ) : null}
 
         {isAdmin && catalog ? (
           <RuleComposer
@@ -708,6 +734,9 @@ function TasksPanel({
                         </span>
                       ) : null}
                       {task.rule ? <span>Via {task.rule.name}</span> : null}
+                      {task.metadata?.source === "MANUAL" ? (
+                        <span>Assignée manuellement</span>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -837,6 +866,14 @@ function NotificationsPanel({
                     Automatisation : {notification.rule.name}
                   </p>
                 ) : null}
+                {notification.link ? (
+                  <a
+                    href={notification.link}
+                    className="mt-2 inline-flex text-xs font-medium text-indigo-300 hover:text-indigo-200"
+                  >
+                    Ouvrir les tâches →
+                  </a>
+                ) : null}
               </div>
               {!notification.readAt ? (
                 <button
@@ -852,6 +889,194 @@ function NotificationsPanel({
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+function ManualTaskComposer({
+  open,
+  catalog,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  catalog: TeamAutomationCatalog;
+  onClose: () => void;
+  onSave: (input: CreateManualTeamTaskInput) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
+  const [priority, setPriority] = useState<TeamTaskPriority>("NORMAL");
+  const [dueAt, setDueAt] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!open) return null;
+
+  const members = catalog.users.filter(
+    (user) => user.role === "CLOSER" || user.role === "SETTER",
+  );
+
+  async function submit() {
+    if (!title.trim() || !assigneeId) {
+      setError("Ajoutez un titre et sélectionnez un closer ou setter.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        assigneeId,
+        priority,
+        dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
+        notificationMessage: notificationMessage.trim() || undefined,
+      });
+      setTitle("");
+      setDescription("");
+      setAssigneeId("");
+      setPriority("NORMAL");
+      setDueAt("");
+      setNotificationMessage("");
+    } catch (nextError) {
+      setError(errorMessage(nextError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] grid place-items-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="manual-task-composer-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Fermer"
+      />
+      <section className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b1120] shadow-2xl">
+        <header className="flex items-start justify-between border-b border-white/10 px-6 py-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
+              Nouvelle tâche manuelle
+            </p>
+            <h2
+              id="manual-task-composer-title"
+              className="mt-1 text-2xl font-semibold"
+            >
+              Assigner et notifier un membre
+            </h2>
+            <p className="mt-2 text-sm text-white/45">
+              Le closer ou setter recevra immédiatement la tâche et une
+              notification dans Capability.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-white/5 text-xl text-white/55 hover:bg-white/10"
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="grid gap-5 p-6 sm:grid-cols-2">
+          <Field label="Destinataire">
+            <select
+              value={assigneeId}
+              onChange={(event) => setAssigneeId(event.target.value)}
+            >
+              <option value="">Sélectionner un membre</option>
+              {members.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.firstName} {user.lastName ?? ""} · {user.role}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Priorité">
+            <select
+              value={priority}
+              onChange={(event) =>
+                setPriority(event.target.value as TeamTaskPriority)
+              }
+            >
+              {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Titre de la tâche">
+              <input
+                value={title}
+                maxLength={120}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Ex. Rappeler le prospect avant 18 h"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <Field label="Consignes">
+              <textarea
+                value={description}
+                maxLength={1000}
+                rows={4}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Détaillez ce que le membre doit faire."
+              />
+            </Field>
+          </div>
+          <Field label="Échéance (optionnelle)">
+            <input
+              type="datetime-local"
+              value={dueAt}
+              onChange={(event) => setDueAt(event.target.value)}
+            />
+          </Field>
+          <Field label="Message de notification (optionnel)">
+            <input
+              value={notificationMessage}
+              maxLength={500}
+              onChange={(event) => setNotificationMessage(event.target.value)}
+              placeholder="Les consignes seront utilisées si vide"
+            />
+          </Field>
+          {error ? (
+            <p className="text-sm text-rose-300 sm:col-span-2" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <footer className="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/60 hover:bg-white/5"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => void submit()}
+            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 disabled:opacity-50"
+          >
+            {saving ? "Envoi…" : "Assigner et notifier"}
+          </button>
+        </footer>
+      </section>
     </div>
   );
 }
@@ -1232,7 +1457,7 @@ function Field({
   return (
     <label className="grid gap-1.5 text-xs text-white/50">
       <span>{label}</span>
-      <span className="[&_input]:w-full [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-black/20 [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm [&_input]:text-white [&_input]:outline-none [&_input]:transition [&_input]:focus:border-indigo-400/60 [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-white/10 [&_select]:bg-[#101827] [&_select]:px-3 [&_select]:py-2.5 [&_select]:text-sm [&_select]:text-white [&_select]:outline-none">
+      <span className="[&_input]:w-full [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-black/20 [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm [&_input]:text-white [&_input]:outline-none [&_input]:transition [&_input]:focus:border-indigo-400/60 [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-white/10 [&_select]:bg-[#101827] [&_select]:px-3 [&_select]:py-2.5 [&_select]:text-sm [&_select]:text-white [&_select]:outline-none [&_textarea]:w-full [&_textarea]:resize-y [&_textarea]:rounded-xl [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:bg-black/20 [&_textarea]:px-3 [&_textarea]:py-2.5 [&_textarea]:text-sm [&_textarea]:text-white [&_textarea]:outline-none [&_textarea]:focus:border-indigo-400/60">
         {children}
       </span>
     </label>
