@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Guard from "@/components/Guard";
-import Sidebar from "@/components/Sidebar";
 import api from "@/lib/api";
 import {
   teamAutomationsApi,
@@ -254,8 +253,7 @@ export default function AutomationsPage() {
   return (
     <Guard>
       <main className="min-h-screen bg-[#070b14] text-white">
-        <Sidebar />
-        <div className="relative overflow-hidden sm:pl-64">
+        <div className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_20%_0%,rgba(99,102,241,.22),transparent_42%),radial-gradient(circle_at_85%_5%,rgba(16,185,129,.14),transparent_35%)]" />
           <div className="relative mx-auto max-w-[1500px] px-5 py-8 lg:px-10">
             <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
